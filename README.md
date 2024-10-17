@@ -1,3 +1,6 @@
+
+
+
 # Algorithm Documentation: Fitting Polygons Inside a Main Polygon
 
 This algorithm is designed to find fitting positions for a foreground polygon within a main polygon while considering potential obstacles such as holes and background polygons. The algorithm identifies valid positions where the foreground polygon can be placed without overlapping obstacles or exceeding the boundaries of the main polygon.
@@ -7,10 +10,14 @@ This algorithm is designed to find fitting positions for a foreground polygon wi
 The key steps of the algorithm are:
 
 1. **Input Data:**
-   - `mainPolygonPoints`: The vertices of the main polygon that defines the overall bounding area.
-   - `holePolygons`: A set of polygons representing holes or obstacles inside the main polygon.
-   - `backgroundPolygon`: A background polygon used for projecting the fitting positions.
-   - `foregroundPolygon`: The polygon that we aim to fit inside the main polygon without overlapping holes or going out of bounds.
+   - `mainPolygonPoints`: (green points) The vertices of the main polygon that defines the overall bounding area.
+   - `holePolygons`: (purpul points) A set of polygons representing holes or obstacles inside the main polygon.
+   - `backgroundPolygon`: (black points) A background polygon used for projecting the fitting positions.
+   - `foregroundPolygon`: (red points) The polygon that we aim to fit inside the main polygon without overlapping holes or going out of bounds.
+   
+<p align="center">
+  <img src="https://i.ibb.co/K6Gzn6x/Screenshot-2024-10-17-at-12-34-00-PM.png" alt="input Date image." title="input Date image." />
+</p>
 
 2. **Fitting Procedure:**
    - **Center Calculation**: Calculate the center of the foreground polygon.
@@ -21,6 +28,25 @@ The key steps of the algorithm are:
    - **Edge Projection**: To ensure no overlap with other polygons, the algorithm projects polygon edges onto certain axes and checks for overlap using the **Separating Axis Theorem (SAT)**.
    - **Valid Position**: A position is valid if the foreground polygon stays within the main polygon and does not overlap any holes.
 
+
+### Output
+
+The output of the algorithm is a set of valid positions where the foreground polygon can be placed within the main polygon. This set may include multiple positions, depending on the configuration of the input data. Each position is represented as a collection of vertices that define the corners of the foreground polygon in its valid placement. If no valid positions are found, the output will indicate that fitting the foreground polygon is not possible within the given constraints.
+
+<div style="text-align: center;">
+  <img src="https://i.ibb.co/kgVsSXn/image.png" />
+  
+  <img src="https://i.ibb.co/T4bWCHp/image-3.png" />
+  <br>
+  
+  <img src="https://i.ibb.co/9N4ZvZs/image-2.png" />
+  
+  <img src="https://i.ibb.co/cXMcKXm/image-1.png" />
+</div>
+
+
+--- 
+
 ## Function Descriptions
 
 ### `findFittingPositions(polygonPoints, holePolygons, backgroundPolygon, foregroundPolygon)`
@@ -28,10 +54,10 @@ This function identifies valid positions for the foreground polygon.
 - **Parameters:**
   - `polygonPoints`: Vertices of the main polygon.
   - `holePolygons`: Vertices of hole polygons.
-  - `backgroundPolygon`: Vertices of the background polygon used for projection.
-  - `foregroundPolygon`: Vertices of the polygon to fit inside the main polygon.
-- **Returns**: The best fitting positions for the foreground polygon.
+  - `backgroundPolygon`: (black points) Vertices of the background polygon used for projection.
+  - `foregroundPolygon`: (red points) Vertices of the polygon to fit inside the main polygon.
 
+- **Returns**: The list of best fitting positions for the foreground polygon.
 ### `calculatePolygonCenter(polygon)`
 Calculates the center (centroid) of a polygon.
 - **Parameters**: `polygon`: Vertices of the polygon.
