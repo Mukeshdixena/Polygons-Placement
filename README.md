@@ -33,7 +33,7 @@ The key steps of the algorithm are:
 
 The output of the algorithm is a set of valid positions where the foreground polygon can be placed within the main polygon. This set may include multiple positions, depending on the configuration of the input data. Each position is represented as a collection of vertices that define the corners of the foreground polygon in its valid placement. If no valid positions are found, the output will indicate that fitting the foreground polygon is not possible within the given constraints.
 
-<div style="text-align: center;">
+<p align="center">
   <img src="https://i.ibb.co/kgVsSXn/image.png" />
   
   <img src="https://i.ibb.co/T4bWCHp/image-3.png" />
@@ -42,7 +42,7 @@ The output of the algorithm is a set of valid positions where the foreground pol
   <img src="https://i.ibb.co/9N4ZvZs/image-2.png" />
   
   <img src="https://i.ibb.co/cXMcKXm/image-1.png" />
-</div>
+</p>
 
 
 --- 
