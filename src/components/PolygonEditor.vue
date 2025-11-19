@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import paper from 'paper';
 import { findLargestInscribedRectangle } from '../geometry.js';
 
@@ -36,19 +36,54 @@ const canvas = ref(null);
 let scope = null;
 let tool = null;
 
-const mode = ref('freehand'); // 'click' or 'freehand'
+const mode = ref('freehand');
 const holeMode = ref(false);
 
 let currentPath = null;
-let polygons = []; // { path: paper.Path, isHole: boolean }
+let polygons = [];
 let vertexSpheres = [];
 let guideSegment = null;
 let freehandPath = null;
+const snapThreshold = 12;
+let nearStartIndicator = null;
+
+function distance(a, b) {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function showNearStartIndicator(firstPoint, mousePoint) {
+  if (!nearStartIndicator) {
+    nearStartIndicator = new scope.Path.Circle({
+      center: firstPoint,
+      radius: snapThreshold,
+      strokeColor: 'rgba(50,150,250,0.6)',
+      dashArray: [6, 4],
+      strokeWidth: 1
+    });
+  } else {
+    nearStartIndicator.position = firstPoint;
+  }
+  if (distance(firstPoint, mousePoint) <= snapThreshold) {
+    nearStartIndicator.strokeColor = 'rgba(20,120,255,0.9)';
+    nearStartIndicator.opacity = 0.35;
+  } else {
+    nearStartIndicator.strokeColor = 'rgba(50,150,250,0.6)';
+    nearStartIndicator.opacity = 0.18;
+  }
+}
+
+function clearNearStartIndicator() {
+  if (nearStartIndicator) {
+    try { nearStartIndicator.remove(); } catch (e) {}
+    nearStartIndicator = null;
+  }
+}
 
 const isDrawing = ref(false);
-let resultsLayer = []; // store result shapes to clear them later
+let resultsLayer = [];
 
-// Utilities from previous editor (slightly trimmed)
 function simplifyRDP(points, epsilon) {
   if (points.length < 3) return points.slice();
   function sqDist(p, q) { const dx = p[0] - q[0], dy = p[1] - q[1]; return dx * dx + dy * dy; }
@@ -121,8 +156,19 @@ function handleClickModeAdd(point) {
     currentPath = new scope.Path({ strokeColor: '#2a62d6', strokeWidth: 2 });
     isDrawing.value = true;
   }
+  if (currentPath.segments.length >= 3) {
+    const firstPt = currentPath.segments[0].point;
+    if (distance(firstPt, point) <= snapThreshold) {
+      finishCurrentPath();
+      clearNearStartIndicator();
+      return;
+    }
+  }
   currentPath.add(point);
-  if (guideSegment) { guideSegment.remove(); guideSegment = null; }
+  if (guideSegment) {
+    guideSegment.remove();
+    guideSegment = null;
+  }
   if (currentPath && currentPath.lastSegment) {
     guideSegment = new scope.Path({
       segments: [currentPath.lastSegment.point, point],
@@ -136,12 +182,13 @@ function finishCurrentPath() {
   if (!currentPath || currentPath.segments.length < 3) {
     if (currentPath) { currentPath.remove(); currentPath = null; }
     isDrawing.value = false;
+    clearNearStartIndicator();
     return;
   }
   let arr = currentPath.segments.map(s => [s.point.x, s.point.y]);
   if (mode.value === 'freehand') {
     arr = simplifyRDP(arr, 3.0);
-    if (arr.length < 3) { currentPath.remove(); currentPath = null; isDrawing.value = false; return; }
+    if (arr.length < 3) { currentPath.remove(); currentPath = null; isDrawing.value = false; clearNearStartIndicator(); return; }
   }
   const closed = createClosedPathFromArray(arr, {
     fillColor: holeMode.value ? '#ffdede' : '#cfe3ff',
@@ -154,6 +201,7 @@ function finishCurrentPath() {
   if (guideSegment) { guideSegment.remove(); guideSegment = null; }
   isDrawing.value = false;
   updateAllVertexHandles();
+  clearNearStartIndicator();
 }
 
 function undoPoint() {
@@ -177,6 +225,7 @@ function clearAll() {
   vertexSpheres = [];
   clearResults();
   isDrawing.value = false;
+  clearNearStartIndicator();
 }
 
 function toggleHoleMode() { holeMode.value = !holeMode.value; }
@@ -209,13 +258,45 @@ function setupTool() {
   tool = new scope.Tool();
   tool.onMouseDown = function (event) {
     const pt = event.point;
-    if (mode.value === 'click') handleClickModeAdd(pt);
-    else startFreehand(pt);
+    if (mode.value === 'click' && currentPath && currentPath.segments.length >= 3) {
+      const firstPt = currentPath.segments[0].point;
+      if (distance(firstPt, pt) <= snapThreshold) {
+        finishCurrentPath();
+        clearNearStartIndicator();
+        return;
+      }
+    }
+    if (mode.value === 'click') {
+      handleClickModeAdd(pt);
+    } else {
+      startFreehand(pt);
+    }
+  };
+  tool.onMouseMove = function (event) {
+    if (mode.value === 'click' && currentPath && currentPath.segments.length >= 1) {
+      const firstPt = currentPath.segments[0].point;
+      showNearStartIndicator(firstPt, event.point);
+      if (guideSegment) {
+        guideSegment.remove();
+        guideSegment = null;
+      }
+      if (currentPath && currentPath.lastSegment) {
+        guideSegment = new scope.Path({
+          segments: [currentPath.lastSegment.point, event.point],
+          strokeColor: 'rgba(0,0,0,0.35)',
+          dashArray: [6, 4]
+        });
+      }
+    } else {
+      clearNearStartIndicator();
+      if (guideSegment) { guideSegment.remove(); guideSegment = null; }
+    }
   };
   tool.onMouseDrag = function (event) {
     const pt = event.point;
-    if (mode.value === 'freehand') continueFreehand(pt);
-    else {
+    if (mode.value === 'freehand') {
+      continueFreehand(pt);
+    } else {
       if (guideSegment) { guideSegment.remove(); guideSegment = null; }
       if (currentPath && currentPath.lastSegment) {
         guideSegment = new scope.Path({
@@ -224,10 +305,29 @@ function setupTool() {
           dashArray: [6, 4]
         });
       }
+      if (currentPath && currentPath.segments.length >= 1) {
+        const firstPt = currentPath.segments[0].point;
+        showNearStartIndicator(firstPt, event.point);
+      }
     }
   };
   tool.onMouseUp = function () {
-    if (mode.value === 'freehand') endFreehand();
+    if (mode.value === 'freehand') {
+      endFreehand();
+    } else {
+    }
+  };
+  tool.onDoubleClick = function (event) {
+    if (mode.value === 'click' && currentPath && currentPath.segments.length >= 3) {
+      const firstPt = currentPath.segments[0].point;
+      if (distance(firstPt, event.point) <= Math.max(6, snapThreshold)) {
+        finishCurrentPath();
+        clearNearStartIndicator();
+      } else {
+        finishCurrentPath();
+        clearNearStartIndicator();
+      }
+    }
   };
 }
 
@@ -240,7 +340,6 @@ function resizeCanvas() {
   scope.view.update();
 }
 
-// Drawing/clearing results
 function clearResults() {
   resultsLayer.forEach(r => r.remove());
   resultsLayer = [];
@@ -253,15 +352,13 @@ function drawResultRectangleCorners(corners) {
   scope.view.update();
 }
 
-// run algorithm and render
 function runAlgorithm() {
-  // take the first non-hole polygon as outer
   const { outer, holes } = getPolygonsAsArrays();
   if (!outer || outer.length === 0) {
     alert('Please draw an outer polygon (room) first.');
     return null;
   }
-  const outerPolygon = outer[0]; // currently we support single outer polygon
+  const outerPolygon = outer[0];
   const opts = {
     gridStep: Math.max(outerPolygon.length > 0 ? 1 : 1, Math.max(scope.view.size.width, scope.view.size.height) / 40),
     angleStepDeg: 12,
@@ -279,20 +376,13 @@ function runAlgorithm() {
 
 function exportPNG() {
   if (!canvas.value) return;
-
-  // Force Paper.js to render latest frame
   scope.view.update();
-
-  // Extract base64 PNG
   const dataURL = canvas.value.toDataURL("image/png");
-
-  // Create download link
   const link = document.createElement("a");
   link.download = "room-rectangle.png";
   link.href = dataURL;
   link.click();
 }
-
 
 onMounted(async () => {
   await nextTick();
@@ -305,13 +395,17 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCanvas);
-  try { tool.remove(); } catch (e) { }
-  try { scope.project.clear(); } catch (e) { }
+  try { tool.remove(); } catch (e) {}
+  try { scope.project.clear(); } catch (e) {}
 });
 
-// Expose methods to parent
 defineExpose({
-  startNewPolygon() { if (currentPath) { currentPath.remove(); currentPath = null; } isDrawing.value = true; },
+  startNewPolygon() {
+    if (currentPath) currentPath.remove();
+    currentPath = null;
+    isDrawing.value = false;
+    clearNearStartIndicator();
+  },
   finishCurrentPolygon() { finishCurrentPath(); },
   undoPoint() { undoPoint(); },
   toggleHoleMode() { toggleHoleMode(); },
@@ -325,19 +419,15 @@ defineExpose({
 
 function exportJSON() {
   const data = getPolygonsAsArrays();
-
   const jsonString = JSON.stringify(data, null, 2);
   const blob = new Blob([jsonString], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-
   const link = document.createElement("a");
   link.href = url;
   link.download = "room-polygons.json";
   link.click();
-
   URL.revokeObjectURL(url);
 }
-
 </script>
 
 <style scoped>
