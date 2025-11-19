@@ -1,0 +1,9 @@
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; font-family: Inter, system-ui, Arial, sans-serif; }
+.layout { display: flex; height: 100vh; }
+.controls { width: 260px; padding: 18px; border-right: 1px solid #e3e3e3; background: #fff; }
+.controls h2 { margin-top: 0; }
+.controls button { width: 100%; padding: 10px; margin-bottom: 10px; cursor: pointer; }
+.canvas-area { flex: 1; display: flex; align-items: stretch; background: #f7f7f7; }
+.paper-canvas { flex: 1; border: 1px solid #d0d0d0; }
+.info { margin-top: 16px; font-size: 14px; color: #444; }
