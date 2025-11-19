@@ -11,24 +11,9 @@ Useful for architecture, CAD, interior space optimization, packing problems, and
 
 ## 🚀 Live Demo
 
-(Optional — you can enable GitHub Pages)
-If you want, I can generate a **GitHub Pages deployment guide** so your demo runs at:
-
 ```
 https://mukeshdixena.github.io/Polygons-Placement/
 ```
-
----
-
-## 🎥 Preview (GIF)
-
-Place a demo GIF here:
-
-```
-./preview/room-rectangle-demo.gif
-```
-
-If you want, I can generate a placeholder GIF template and instructions.
 
 ---
 
