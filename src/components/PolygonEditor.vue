@@ -36,7 +36,7 @@ const canvas = ref(null);
 let scope = null;
 let tool = null;
 
-const mode = ref('click'); // 'click' or 'freehand'
+const mode = ref('freehand'); // 'click' or 'freehand'
 const holeMode = ref(false);
 
 let currentPath = null;
