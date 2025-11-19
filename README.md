@@ -239,15 +239,3 @@ I can generate implementations for:
 Tell me which one you'd like next.
 
 ---
-
-# 📄 License
-
-MIT License
-
----
-
-# 🙋‍♂️ Author
-
-Built by **Mukesh Dixena** with assistance from AI-powered tooling.
-
----
