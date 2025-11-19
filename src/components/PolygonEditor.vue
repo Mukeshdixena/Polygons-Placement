@@ -10,7 +10,7 @@
         <button @click="startNewPolygon">New Polygon</button>
         <button @click="finishCurrentPolygon" :disabled="!isDrawing">Finish</button>
         <button @click="undoPoint" :disabled="!isDrawing">Undo</button>
-        <button @click="toggleHoleMode" :class="{active: holeMode}">Hole Mode</button>
+        <button @click="toggleHoleMode" :class="{ active: holeMode }">Hole Mode</button>
         <button @click="clearAll">Clear All</button>
         <button @click="onExport">Export</button>
         <button @click="runAlgorithm">Run</button>
@@ -51,11 +51,11 @@ let resultsLayer = []; // store result shapes to clear them later
 // Utilities from previous editor (slightly trimmed)
 function simplifyRDP(points, epsilon) {
   if (points.length < 3) return points.slice();
-  function sqDist(p,q){ const dx=p[0]-q[0], dy=p[1]-q[1]; return dx*dx + dy*dy; }
-  function pointLineDistanceSq(a,b,p){
-    const A = p[0]-a[0], B = p[1]-a[1];
-    const C = b[0]-a[0], D = b[1]-a[1];
-    const dot = A*C + B*D; const lenSq = C*C + D*D;
+  function sqDist(p, q) { const dx = p[0] - q[0], dy = p[1] - q[1]; return dx * dx + dy * dy; }
+  function pointLineDistanceSq(a, b, p) {
+    const A = p[0] - a[0], B = p[1] - a[1];
+    const C = b[0] - a[0], D = b[1] - a[1];
+    const dot = A * C + B * D; const lenSq = C * C + D * D;
     let param = lenSq !== 0 ? dot / lenSq : -1; let xx, yy;
     if (param < 0) { xx = a[0]; yy = a[1]; }
     else if (param > 1) { xx = b[0]; yy = b[1]; }
@@ -263,7 +263,7 @@ function runAlgorithm() {
   }
   const outerPolygon = outer[0]; // currently we support single outer polygon
   const opts = {
-    gridStep: Math.max(outerPolygon.length > 0 ? 1 : 1,  Math.max(scope.view.size.width, scope.view.size.height) / 40),
+    gridStep: Math.max(outerPolygon.length > 0 ? 1 : 1, Math.max(scope.view.size.width, scope.view.size.height) / 40),
     angleStepDeg: 12,
     edgeSampleCount: 8
   };
@@ -277,6 +277,23 @@ function runAlgorithm() {
   return result;
 }
 
+function exportPNG() {
+  if (!canvas.value) return;
+
+  // Force Paper.js to render latest frame
+  scope.view.update();
+
+  // Extract base64 PNG
+  const dataURL = canvas.value.toDataURL("image/png");
+
+  // Create download link
+  const link = document.createElement("a");
+  link.download = "room-rectangle.png";
+  link.href = dataURL;
+  link.click();
+}
+
+
 onMounted(async () => {
   await nextTick();
   scope = paper;
@@ -288,8 +305,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCanvas);
-  try { tool.remove(); } catch(e) {}
-  try { scope.project.clear(); } catch(e) {}
+  try { tool.remove(); } catch (e) { }
+  try { scope.project.clear(); } catch (e) { }
 });
 
 // Expose methods to parent
@@ -301,17 +318,74 @@ defineExpose({
   clearAll() { clearAll(); },
   getPolygons() { return getPolygonsAsArrays(); },
   runAlgorithm() { return runAlgorithm(); },
-  drawResultRectangle(corners) { drawResultRectangleCorners(corners); }
+  drawResultRectangle(corners) { drawResultRectangleCorners(corners); },
+  exportPNG,
+  exportJSON
 });
+
+function exportJSON() {
+  const data = getPolygonsAsArrays();
+
+  const jsonString = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonString], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "room-polygons.json";
+  link.click();
+
+  URL.revokeObjectURL(url);
+}
+
 </script>
 
 <style scoped>
-.editor-root { display: flex; flex-direction: column; height: 100%; }
-.toolbar { padding: 12px; background: #fff; border-bottom: 1px solid #eee; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.modes label { margin-right: 8px; }
-.actions button { margin-right: 6px; padding: 6px 10px; }
-.actions button.active { background: #f0f0f0; }
-.canvas-wrap { flex: 1; display: block; }
-.paper-canvas { width: 100%; height: calc(100vh - 70px); display: block; background: #fafafa; }
-.hint { width: 100%; margin-top: 6px; color: #666; font-size: 12px; }
+.editor-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.toolbar {
+  padding: 12px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.modes label {
+  margin-right: 8px;
+}
+
+.actions button {
+  margin-right: 6px;
+  padding: 6px 10px;
+}
+
+.actions button.active {
+  background: #f0f0f0;
+}
+
+.canvas-wrap {
+  flex: 1;
+  display: block;
+}
+
+.paper-canvas {
+  width: 100%;
+  height: calc(100vh - 70px);
+  display: block;
+  background: #fafafa;
+}
+
+.hint {
+  width: 100%;
+  margin-top: 6px;
+  color: #666;
+  font-size: 12px;
+}
 </style>

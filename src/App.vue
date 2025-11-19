@@ -9,7 +9,8 @@
         <button @click="undo">Undo</button>
         <button @click="toggleHole">Toggle Hole</button>
         <button @click="clearAll">Clear</button>
-        <button @click="exportPolygons">Export</button>
+        <button @click="exportPolygons">Export JSON</button>
+        <button @click="exportPNG">Export PNG</button>
       </div>
 
       <h4>Algorithm</h4>
@@ -31,7 +32,7 @@
         <div style="margin-top:10px;"><strong>Corners:</strong></div>
         <ul>
           <li v-for="(c, i) in result.corners" :key="i">
-            {{ i+1 }}: ({{ c[0].toFixed(2) }}, {{ c[1].toFixed(2) }})
+            {{ i + 1 }}: ({{ c[0].toFixed(2) }}, {{ c[1].toFixed(2) }})
           </li>
         </ul>
       </div>
@@ -56,11 +57,11 @@ function finishPolygon() { editorRef.value.finishCurrentPolygon(); }
 function undo() { editorRef.value.undoPoint(); }
 function toggleHole() { editorRef.value.toggleHoleMode(); }
 function clearAll() { result.value = null; execTime.value = 0; editorRef.value.clearAll(); }
+
 function exportPolygons() {
-  const pol = editorRef.value.getPolygons();
-  console.log(pol);
-  alert('Polygons printed in console.');
+  editorRef.value.exportJSON();
 }
+
 
 function runFitting() {
   const start = performance.now();
@@ -73,4 +74,8 @@ function runFitting() {
     result.value = res;
   }
 }
+function exportPNG() {
+  editorRef.value.exportPNG();
+}
+
 </script>
