@@ -107,4 +107,4 @@ Typical runtime: **1–10 ms** on common room shapes.
 
 
 Enjoy the tool! Feel free to open issues or PRs on the repo.
-```
+
